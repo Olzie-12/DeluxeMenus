@@ -763,6 +763,27 @@ public class DeluxeMenusConfig {
                 }
             }
 
+            if (c.contains(currentPath + "double_left_click_commands")) {
+                builder.doubleLeftClickHandler(getClickHandler(c, currentPath + "double_left_click_commands"));
+                if (c.contains(currentPath + "double_left_click_requirement")) {
+                    builder.doubleLeftClickRequirements(this.getRequirements(c, currentPath + "double_left_click_requirement"));
+                }
+            }
+
+            if (c.contains(currentPath + "triple_left_click_commands")) {
+                builder.tripleLeftClickHandler(getClickHandler(c, currentPath + "triple_left_click_commands"));
+                if (c.contains(currentPath + "triple_left_click_requirement")) {
+                    builder.tripleLeftClickRequirements(this.getRequirements(c, currentPath + "triple_left_click_requirement"));
+                }
+            }
+
+            if (c.contains(currentPath + "left_click_commands")) {
+                builder.leftClickHandler(getClickHandler(c, currentPath + "left_click_commands"));
+                if (c.contains(currentPath + "left_click_requirement")) {
+                    builder.leftClickRequirements(this.getRequirements(c, currentPath + "left_click_requirement"));
+                }
+            }
+
             if (c.contains(currentPath + "right_click_commands")) {
                 builder.rightClickHandler(getClickHandler(c, currentPath + "right_click_commands"));
                 if (c.contains(currentPath + "right_click_requirement")) {

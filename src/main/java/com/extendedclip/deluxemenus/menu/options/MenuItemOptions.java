@@ -69,6 +69,8 @@ public class MenuItemOptions {
 
     private final ClickHandler clickHandler;
     private final ClickHandler leftClickHandler;
+    private final ClickHandler doubleLeftClickHandler;
+    private final ClickHandler tripleLeftClickHandler;
     private final ClickHandler rightClickHandler;
     private final ClickHandler shiftLeftClickHandler;
     private final ClickHandler shiftRightClickHandler;
@@ -77,6 +79,8 @@ public class MenuItemOptions {
     private final RequirementList viewRequirements;
     private final RequirementList clickRequirements;
     private final RequirementList leftClickRequirements;
+    private final RequirementList doubleLeftClickRequirements;
+    private final RequirementList tripleLeftClickRequirements;
     private final RequirementList rightClickRequirements;
     private final RequirementList shiftLeftClickRequirements;
     private final RequirementList shiftRightClickRequirements;
@@ -123,6 +127,8 @@ public class MenuItemOptions {
         this.updatePlaceholders = builder.updatePlaceholders;
         this.clickHandler = builder.clickHandler;
         this.leftClickHandler = builder.leftClickHandler;
+        this.doubleLeftClickHandler = builder.doubleLeftClickHandler;
+        this.tripleLeftClickHandler = builder.tripleLeftClickHandler;
         this.rightClickHandler = builder.rightClickHandler;
         this.shiftLeftClickHandler = builder.shiftLeftClickHandler;
         this.shiftRightClickHandler = builder.shiftRightClickHandler;
@@ -130,6 +136,8 @@ public class MenuItemOptions {
         this.viewRequirements = builder.viewRequirements;
         this.clickRequirements = builder.clickRequirements;
         this.leftClickRequirements = builder.leftClickRequirements;
+        this.doubleLeftClickRequirements = builder.doubleLeftClickRequirements;
+        this.tripleLeftClickRequirements = builder.tripleLeftClickRequirements;
         this.rightClickRequirements = builder.rightClickRequirements;
         this.shiftLeftClickRequirements = builder.shiftLeftClickRequirements;
         this.shiftRightClickRequirements = builder.shiftRightClickRequirements;
@@ -304,6 +312,14 @@ public class MenuItemOptions {
         return Optional.ofNullable(leftClickHandler);
     }
 
+    public @NotNull Optional<ClickHandler> doubleLeftClickHandler() {
+        return Optional.ofNullable(doubleLeftClickHandler);
+    }
+
+    public @NotNull Optional<ClickHandler> tripleLeftClickHandler() {
+        return Optional.ofNullable(tripleLeftClickHandler);
+    }
+
     public @NotNull Optional<ClickHandler> rightClickHandler() {
         return Optional.ofNullable(rightClickHandler);
     }
@@ -330,6 +346,14 @@ public class MenuItemOptions {
 
     public @NotNull Optional<RequirementList> leftClickRequirements() {
         return Optional.ofNullable(leftClickRequirements);
+    }
+
+    public @NotNull Optional<RequirementList> doubleLeftClickRequirements() {
+        return Optional.ofNullable(doubleLeftClickRequirements);
+    }
+
+    public @NotNull Optional<RequirementList> tripleLeftClickRequirements() {
+        return Optional.ofNullable(tripleLeftClickRequirements);
     }
 
     public @NotNull Optional<RequirementList> rightClickRequirements() {
@@ -388,12 +412,16 @@ public class MenuItemOptions {
                 .updatePlaceholders(this.updatePlaceholders)
                 .clickHandler(this.clickHandler)
                 .leftClickHandler(this.leftClickHandler)
+                .doubleLeftClickHandler(this.doubleLeftClickHandler)
+                .tripleLeftClickHandler(this.tripleLeftClickHandler)
                 .rightClickHandler(this.rightClickHandler)
                 .shiftLeftClickHandler(this.shiftLeftClickHandler)
                 .shiftRightClickHandler(this.shiftRightClickHandler)
                 .middleClickHandler(this.middleClickHandler)
                 .viewRequirements(this.viewRequirements)
                 .clickRequirements(this.clickRequirements)
+                .doubleLeftClickHandler(this.doubleLeftClickHandler)
+                .tripleLeftClickHandler(this.tripleLeftClickHandler)
                 .leftClickRequirements(this.leftClickRequirements)
                 .rightClickRequirements(this.rightClickRequirements)
                 .shiftLeftClickRequirements(this.shiftLeftClickRequirements)
@@ -451,6 +479,8 @@ public class MenuItemOptions {
 
         private ClickHandler clickHandler;
         private ClickHandler leftClickHandler;
+        private ClickHandler doubleLeftClickHandler;
+        private ClickHandler tripleLeftClickHandler;
         private ClickHandler rightClickHandler;
         private ClickHandler shiftLeftClickHandler;
         private ClickHandler shiftRightClickHandler;
@@ -459,6 +489,8 @@ public class MenuItemOptions {
         private RequirementList viewRequirements;
         private RequirementList clickRequirements;
         private RequirementList leftClickRequirements;
+        private RequirementList doubleLeftClickRequirements;
+        private RequirementList tripleLeftClickRequirements;
         private RequirementList rightClickRequirements;
         private RequirementList shiftLeftClickRequirements;
         private RequirementList shiftRightClickRequirements;
@@ -694,6 +726,16 @@ public class MenuItemOptions {
             return this;
         }
 
+        public MenuItemOptionsBuilder doubleLeftClickHandler(final @Nullable ClickHandler doubleLeftClickHandler) {
+            this.doubleLeftClickHandler = doubleLeftClickHandler;
+            return this;
+        }
+
+        public MenuItemOptionsBuilder tripleLeftClickHandler(final @Nullable ClickHandler tripleLeftClickHandler) {
+            this.tripleLeftClickHandler = tripleLeftClickHandler;
+            return this;
+        }
+
         public MenuItemOptionsBuilder rightClickHandler(final @Nullable ClickHandler rightClickHandler) {
             this.rightClickHandler = rightClickHandler;
             return this;
@@ -726,6 +768,16 @@ public class MenuItemOptions {
 
         public MenuItemOptionsBuilder leftClickRequirements(final @Nullable RequirementList leftClickRequirements) {
             this.leftClickRequirements = leftClickRequirements;
+            return this;
+        }
+
+        public MenuItemOptionsBuilder doubleLeftClickRequirements(final @Nullable RequirementList doubleLeftClickRequirements) {
+            this.doubleLeftClickRequirements = doubleLeftClickRequirements;
+            return this;
+        }
+
+        public MenuItemOptionsBuilder tripleLeftClickRequirements(final @Nullable RequirementList tripleLeftClickRequirements) {
+            this.tripleLeftClickRequirements = tripleLeftClickRequirements;
             return this;
         }
 
