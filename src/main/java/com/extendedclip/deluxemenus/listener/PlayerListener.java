@@ -2,6 +2,7 @@ package com.extendedclip.deluxemenus.listener;
 
 import com.extendedclip.deluxemenus.DeluxeMenus;
 import com.extendedclip.deluxemenus.action.ClickHandler;
+import com.extendedclip.deluxemenus.cache.TripleClickCache;
 import com.extendedclip.deluxemenus.menu.Menu;
 import com.extendedclip.deluxemenus.menu.MenuHolder;
 import com.extendedclip.deluxemenus.menu.MenuItem;
@@ -27,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class PlayerListener extends Listener {
 
     private final Cache<UUID, Long> cache = CacheBuilder.newBuilder().expireAfterWrite(75, TimeUnit.MILLISECONDS).build();
-    private final Cache<UUID, Integer> clickCache = CacheBuilder.newBuilder().expireAfterWrite(4000, TimeUnit.MILLISECONDS).build();
+    private final Cache<UUID, TripleClickCache> clickCache = CacheBuilder.newBuilder().expireAfterWrite(4000, TimeUnit.MILLISECONDS).build();
 
     // This is so dumb. Mojang fix your shit.
     private final Cache<UUID, Long> shiftCache = CacheBuilder.newBuilder().expireAfterWrite(200, TimeUnit.MILLISECONDS).build();
@@ -169,11 +170,12 @@ public class PlayerListener extends Listener {
         }
 
         if (event.getClick() == ClickType.LEFT) {
-            Integer previousClicks = clickCache.getIfPresent(player.getUniqueId());
-            if (previousClicks == null) previousClicks = 0;
-            clickCache.put(player.getUniqueId(), previousClicks + 1);
-
-            if (previousClicks >= 2) {
+            TripleClickCache previousClicks = clickCache.getIfPresent(player.getUniqueId());
+            if (previousClicks == null || previousClicks.getSlot() != event.getSlot()) {
+                previousClicks = new TripleClickCache(0, event.getSlot());
+            }
+            clickCache.put(player.getUniqueId(), previousClicks);
+            if (previousClicks.setClicks(previousClicks.getClicks() + 1) >= 2) {
                 clickCache.invalidate(player.getUniqueId());
                 if (handleClick(player, holder, item.options().tripleLeftClickHandler(), item.options().tripleLeftClickRequirements())) {
                     return;
