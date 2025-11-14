@@ -175,7 +175,7 @@ public class PlayerListener extends Listener {
                 previousClicks = new TripleClickCache(0, event.getSlot());
             }
             clickCache.put(player.getUniqueId(), previousClicks);
-            if (previousClicks.setClicks(previousClicks.getClicks() + 1) >= 2) {
+            if (previousClicks.setClicks(previousClicks.getClicks() + 1) >= 3) {
                 clickCache.invalidate(player.getUniqueId());
                 if (handleClick(player, holder, item.options().tripleLeftClickHandler(), item.options().tripleLeftClickRequirements())) {
                     return;
