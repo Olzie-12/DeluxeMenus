@@ -1,6 +1,10 @@
 package com.extendedclip.deluxemenus.menu;
 
 import com.extendedclip.deluxemenus.DeluxeMenus;
+import com.extendedclip.deluxemenus.action.ClickHandler;
+import com.extendedclip.deluxemenus.dupe.MenuItemMarker;
+import com.extendedclip.deluxemenus.events.DeluxeMenusOpenMenuEvent;
+import com.extendedclip.deluxemenus.events.DeluxeMenusPreOpenMenuEvent;
 import com.extendedclip.deluxemenus.menu.command.RegistrableMenuCommand;
 import com.extendedclip.deluxemenus.menu.options.MenuOptions;
 import com.extendedclip.deluxemenus.requirement.RequirementList;
@@ -105,6 +109,10 @@ public class Menu {
         return menus.size();
     }
 
+    public static @NotNull Set<String> getAllMenuNames() {
+        return menus.keySet();
+    }
+
     public static @NotNull Collection<Menu> getAllMenus() {
         return menus.values();
     }
@@ -184,6 +192,7 @@ public class Menu {
         MenuHolder holder = optionalHolder.get();
 
         holder.stopPlaceholderUpdate();
+        holder.stopRefreshTask();
 
         if (executeCloseActions) {
             holder.getMenu().map(Menu::options).map(MenuOptions::closeHandler).flatMap(h -> h).ifPresent(h -> h.onClick(holder));
@@ -225,7 +234,7 @@ public class Menu {
             return true;
         }
 
-        if (holder.getViewer() != null && this.hasOpenBypassPerm(holder.getViewer())) {
+        if (holder.getViewer() != null && (this.options.enableBypassPerm() && this.hasOpenBypassPerm(holder.getViewer()))) {
             return true;
         }
 
@@ -264,7 +273,12 @@ public class Menu {
             return;
         }
 
-        final MenuHolder holder = new MenuHolder(plugin, viewer);
+        DeluxeMenusPreOpenMenuEvent preOpenEvent = new DeluxeMenusPreOpenMenuEvent(viewer);
+    Bukkit.getPluginManager().callEvent(preOpenEvent);
+
+    if (preOpenEvent.isCancelled()) return;
+
+    final MenuHolder holder = new MenuHolder(plugin, viewer);
         if (placeholderPlayer != null) {
             holder.setPlaceholderPlayer(placeholderPlayer);
         }
@@ -370,6 +384,10 @@ public class Menu {
             final boolean updatePlaceholders = update;
 
             Bukkit.getScheduler().runTask(plugin, () -> {
+                if(options.refresh()) {
+                    holder.startRefreshTask();
+                }
+
                 if (isInMenu(holder.getViewer())) {
                     closeMenu(plugin, holder.getViewer(), false);
                 }
@@ -377,11 +395,20 @@ public class Menu {
                 viewer.openInventory(inventory);
                 menuHolders.add(holder);
 
-                if (updatePlaceholders) {
-                    holder.startUpdatePlaceholdersTask();
-                }
-            });
-        });
+        if (updatePlaceholders) {
+          holder.startUpdatePlaceholdersTask();
+        }
+      });
+
+      Bukkit.getScheduler().runTask(plugin, () -> {
+        DeluxeMenusOpenMenuEvent openEvent = new DeluxeMenusOpenMenuEvent(viewer, holder);
+        Bukkit.getPluginManager().callEvent(openEvent);
+      });
+    });
+  }
+
+    public void refreshForAll() {
+        menuHolders.stream().filter(menuHolder -> menuHolder.getMenuName().equalsIgnoreCase(options.name())).forEach(MenuHolder::refreshMenu);
     }
 
     public @NotNull Map<Integer, TreeMap<Integer, MenuItem>> getMenuItems() {
@@ -399,4 +426,9 @@ public class Menu {
     public @NotNull String path() {
         return this.path;
     }
+
+    public int activeViewers() {
+        return (int) menuHolders.stream().filter(holder -> holder.getMenuName().equalsIgnoreCase(options.name())).count();
+    }
+
 }
