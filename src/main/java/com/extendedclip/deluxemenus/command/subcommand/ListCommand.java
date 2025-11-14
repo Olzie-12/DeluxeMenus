@@ -3,7 +3,7 @@ package com.extendedclip.deluxemenus.command.subcommand;
 import com.extendedclip.deluxemenus.DeluxeMenus;
 import com.extendedclip.deluxemenus.menu.Menu;
 import com.extendedclip.deluxemenus.utils.Messages;
-import com.google.common.primitives.Ints;
+import com.extendedclip.deluxemenus.utils.PaginationUtils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -21,24 +21,34 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.kyori.adventure.text.Component.newline;
 import static net.kyori.adventure.text.Component.text;
 
 public class ListCommand extends SubCommand {
 
-    public ListCommand(final @NotNull DeluxeMenus plugin) {
+    private static final String LIST_PERMISSION = "deluxemenus.list";
+
+    public ListCommand(@NotNull final DeluxeMenus plugin) {
         super(plugin);
     }
 
     @Override
-    public void execute(final @NotNull CommandSender sender, final @NotNull List<String> args) {
-        if (!sender.hasPermission("deluxemenus.list")) {
+    public @NotNull String getName() {
+        return "list";
+    }
+
+    @Override
+    public void execute(@NotNull final CommandSender sender, @NotNull final List<String> arguments) {
+        if (!sender.hasPermission(LIST_PERMISSION)) {
             plugin.sms(sender, Messages.NO_PERMISSION);
             return;
         }
 
-        if (!args.isEmpty() && args.get(0).equalsIgnoreCase("all")) {
+        if (!arguments.isEmpty() && arguments.get(0).equalsIgnoreCase("all")) {
             final Collection<Menu> menus = Menu.getAllMenus();
             if (menus.isEmpty()) {
                 plugin.sms(sender, Messages.MENUS_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement("There are no").build()));
@@ -49,17 +59,72 @@ public class ListCommand extends SubCommand {
             return;
         }
 
-        final Map<String, List<Menu>> menus = Menu.getPathSortedMenus();
-        if (menus.isEmpty() || menus.values().stream().allMatch(List::isEmpty)) {
+        if (Menu.getAllMenuNames().isEmpty()) {
             plugin.sms(sender, Messages.MENUS_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement("There are no").build()));
             return;
         }
 
+        final Map<String, List<Menu>> menus = Menu.getPathSortedMenus();
         final List<Menu> configMenus = menus.remove("config");
-        sendPaginatedMenuList(sender, menus, configMenus == null ? Collections.emptyList() : configMenus, args);
+
+        sendPaginatedMenuList(sender, menus, configMenus == null ? Collections.emptyList() : configMenus, arguments);
     }
 
-    private void sendSimpleMenuList(final @NotNull CommandSender sender, final @NotNull Collection<Menu> menus) {
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull final CommandSender sender, @NotNull final List<String> arguments) {
+        if (!sender.hasPermission(LIST_PERMISSION)) {
+            return null;
+        }
+
+        if (arguments.isEmpty()) {
+            return List.of(getName());
+        }
+
+        if (arguments.size() > 2) {
+            return null;
+        }
+
+        if (arguments.size() == 1) {
+            if (arguments.get(0).isEmpty()) {
+                return List.of(getName());
+            }
+
+            final String firstArgument = arguments.get(0).toLowerCase();
+
+            if (getName().startsWith(firstArgument)) {
+                return List.of(getName());
+            }
+
+            return null;
+        }
+
+        final String firstArgument = arguments.get(0).toLowerCase();
+
+        if (!getName().equals(firstArgument)) {
+            return null;
+        }
+
+        final String secondArgument = arguments.get(1).toLowerCase();
+
+        final int menusCount = Menu.getAllMenuNames().size();
+        final int menusPerPage = plugin.getGeneralConfig().menusListPageSize();
+        final int pagesCount = (int) Math.ceil((double) menusCount / menusPerPage);
+
+        final List<String> completions = Stream.concat(
+                Stream.of("all"),
+                IntStream.rangeClosed(1, pagesCount).mapToObj(String::valueOf))
+                .collect(Collectors.toList());
+
+        if (secondArgument.isEmpty()) {
+            return completions;
+        }
+
+        return completions.stream()
+                .filter(completion -> completion.startsWith(secondArgument))
+                .collect(Collectors.toList());
+    }
+
+    private void sendSimpleMenuList(@NotNull final CommandSender sender, @NotNull final Collection<Menu> menus) {
         final TextComponent.Builder list = text();
         list.append(text("The following " + menus.size() + " menus are loaded on the server:", NamedTextColor.GOLD).append(newline()));
 
@@ -91,37 +156,32 @@ public class ListCommand extends SubCommand {
         plugin.sms(sender, list.build());
     }
 
-    private void sendPaginatedMenuList(final @NotNull CommandSender sender, final @NotNull Map<String, List<Menu>> menus,
-                                       final @NotNull List<Menu> configMenus, final @NotNull List<String> args) {
+    private void sendPaginatedMenuList(@NotNull final CommandSender sender, @NotNull final Map<String, List<Menu>> menus,
+                                       @NotNull final List<Menu> configMenus, @NotNull final List<String> args) {
+
+        final int menusPerPage = plugin.getGeneralConfig().menusListPageSize();
         final int totalMenusCount = configMenus.size() + menus.values().stream().mapToInt(List::size).sum();
+        final int pagesCount = PaginationUtils.getPagesCount(menusPerPage, totalMenusCount);
 
-        Integer page = null;
-        if (totalMenusCount > plugin.getGeneralConfig().menusListPageSize() && !args.isEmpty()) {
-            page = Ints.tryParse(args.get(0));
-        }
-
-        final int maxPages = (int) Math.ceil((double) totalMenusCount / plugin.getGeneralConfig().menusListPageSize());
-
-        if (page == null || page < 1) {
-            page = 1;
-        }
-
-        if (page > maxPages) {
-            page = maxPages;
-        }
+        final int page = PaginationUtils.parsePage(
+                menusPerPage,
+                totalMenusCount,
+                pagesCount,
+                args.isEmpty() ? null : args.get(0)
+        );
 
         final Map<String, List<Menu>> paginatedMenus = getPaginatedMenus(
                 menus,
                 configMenus.stream().collect(TreeMap::new, (map, menu) -> map.put(menu.options().name(), menu), TreeMap::putAll),
                 page,
-                plugin.getGeneralConfig().menusListPageSize()
+                menusPerPage
         );
 
         final int pageMenusCount = paginatedMenus.values().stream().mapToInt(List::size).sum();
         final Map<String, Object> pageMenusTree = convertMenusToTree(paginatedMenus);
 
         final TextComponent.Builder list = text();
-        list.append(text("Page " + page + "/" + maxPages + " - " + pageMenusCount + " menus:", NamedTextColor.GOLD).append(newline()));
+        list.append(text("Page " + page + "/" + pagesCount + " - " + pageMenusCount + " menus:", NamedTextColor.GOLD).append(newline()));
 
         if (sender instanceof ConsoleCommandSender) {
             final var menuList = createMenuListForConsole(pageMenusTree, 0);
@@ -138,7 +198,7 @@ public class ListCommand extends SubCommand {
 
         list.append(menuList);
 
-        if (page > 1 || page < maxPages) {
+        if (page > 1 || page < pagesCount) {
             list.append(newline());
 
             if (page > 1) {
@@ -149,12 +209,12 @@ public class ListCommand extends SubCommand {
                                         .append(text("Executes: /dm list " + (page - 1), NamedTextColor.GRAY))
                         ))
                         .clickEvent(ClickEvent.runCommand("/dm list " + (page - 1))));
-                if (page < maxPages) {
+                if (page < pagesCount) {
                     list.append(text(" | ", NamedTextColor.GREEN));
                 }
             }
 
-            if (page < maxPages) {
+            if (page < pagesCount) {
                 list.append(text("Next >>", NamedTextColor.GOLD)
                         .hoverEvent(HoverEvent.showText(
                                 text("Click to go to the next page", NamedTextColor.GRAY)
@@ -169,7 +229,7 @@ public class ListCommand extends SubCommand {
     }
 
     private Map<String, List<Menu>> getPaginatedMenus(final Map<String, List<Menu>> menus,
-                                                      final @NotNull Map<String, Menu> configMenus,
+                                                      @NotNull final Map<String, Menu> configMenus,
                                                       final int page,
                                                       final int pageSize
     ) {
@@ -302,7 +362,7 @@ public class ListCommand extends SubCommand {
      * If the config option to use admin commands in menus list is enabled, the admin "/dm open" command will be returned.
      * @return The command that can be used to open this menu.
      */
-    public @Nullable String getMenuDisplayCommand(final @NotNull Menu menu) {
+    public @Nullable String getMenuDisplayCommand(@NotNull final Menu menu) {
         final boolean useAdminCommand = this.plugin.getGeneralConfig().useAdminCommandsInMenusList();
 
         if (useAdminCommand) {
